@@ -12,31 +12,25 @@ mpl.rcParams['font.size'] = 15
 store=pd.HDFStore('data.h5')
 
 #inputs
-#data=(store['vod_pm']-store['vod_am'])/store['vod_am']
+data=(store['vod_pm']-store['vod_am'])/store['vod_am']
 data=(store['vod_am'])/store['LAI_025_grid']
 data=data[data.index.year<=2015]
 grid_size=25
-thresh=0.3
-start_year=2009
-start_month=7
-data_label=r'$\frac{VOD_{AMSRE}}{LAI}$'
-#----------------------------------------------------------------------
-
 
 mort=store['mortality_%03d_grid'%grid_size]
 mort_main=mort.copy()
 #data=store['vod_pm']
-
+start_month=6
 data=data.loc[(data.index.month>=start_month) & (data.index.month<=start_month+3)]
 #data.loc[:,ind(thresh,mort)].plot(legend=False)
 #data=store['vod_am']/store['LAI_025_grid']
 data_anomaly=median_anomaly(data)
 data_yearly=data.resample("A").mean()
-
+thresh=0.3
 #data_yearly.loc[:,ind(thresh,mort_main)].plot(legend=False)
 #data_anomaly.loc[:,ind(thresh,mort)].plot(legend=False)
 
-
+start_year=2009
 end_year=min(max(mort.index.year),max(data.index.year))
 data_anomaly=data_anomaly[(data_anomaly.index.year>=start_year) &\
                           (data_anomaly.index.year<=end_year)]
@@ -55,11 +49,9 @@ fig_width=zoom*cols
 fig_height=1.5*zoom*rows
 if grid_size==25:
     grids=Dir_mort+'/CA_proc.gdb/grid'
-    marker_factor=10
 elif grid_size==5:
     grids=Dir_mort+'/CA_proc.gdb/smallgrid'
-    marker_factor=8
-
+marker_factor=2
 lats = [row[0] for row in arcpy.da.SearchCursor(grids, 'x')]
 lons = [row[0] for row in arcpy.da.SearchCursor(grids, 'y')]
 sns.set_style("white")
@@ -93,8 +85,9 @@ cb2=fig.colorbar(plot_data,ax=axs[1,:].ravel().tolist(), fraction=0.01,\
                  aspect=20,pad=0.02)
 #cb2.ax.invert_yaxis()
 axs[0,0].set_ylabel('Fractional area \n Mortality')
-axs[1,0].set_ylabel(data_label+' \n anomaly')
-fig.suptitle('Timeseries maps of mortality and '+data_label)
+axs[1,0].set_ylabel('Min. VOD (pm) \n anomaly')
+fig.suptitle('Timeseries maps of mortality and anomaly')
+
 plt.show()
 
 ## all in one kde plots
@@ -102,31 +95,14 @@ sns.set_style("darkgrid")
 fig, axs = plt.subplots(nrows=1,ncols=2,figsize=(8,4))
 plt.subplots_adjust(wspace=0.15)
 mort.T.plot(kind='kde',legend=False,cmap='jet',ax=axs[0])
-axs[0].set_ylabel('Density')
+axs[0].set_ylabel('Probability')
 axs[0].set_xlabel('FAM')
 data_anomaly.loc[:,ind(thresh,mort_main)].T.plot(kind='kde',legend=True,cmap='jet',ax=axs[1])
-axs[1].set_xlabel(data_label+' anomaly')
+axs[1].set_xlabel('Median anomaly')
 axs[1].set_ylabel('')
-plt.legend(labels=data_anomaly.index.year,bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
-#axs[1].invert_xaxis()
-fig.suptitle('Kernel density of high mortality regions')
+axs[1].legend(data_anomaly.index.year)
+axs[1].invert_xaxis()
+fig.suptitle('Kernel Density yearly comparison')
 
-### scatter plot
-x=data_anomaly.loc[:,ind(thresh,mort_main)].stack().to_frame()
-y=mort.loc[:,ind(thresh,mort_main)].stack().to_frame()
-lm = linear_model.LinearRegression(fit_intercept=True)
-lm.fit(x,y)
 
-sns.set(font_scale=1.4)
-fig, ax = plt.subplots(1,1,figsize=(4,4))
-plt.scatter(x,y,color='b',alpha=0.6)
-plt.plot(x,lm.predict(x),color='r',linewidth=2)
-#ax.set_xlim([0,2.5])
-ax.set_xlabel(data_label+' anomaly')
-ax.set_ylabel('Fractional area mortality')
-ax.set_title('FMA Vs '+data_label+' anomaly' )
-ax.annotate('FAM Threshold = %.1f'%thresh, xy=(0.05, 0.9), \
-            xycoords='axes fraction',fontsize=10)
-ax.annotate('$R^2 = %.2f$'%lm.score(x,y), xy=(0.05, 0.8), \
-            xycoords='axes fraction',color='r')
 

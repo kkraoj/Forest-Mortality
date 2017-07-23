@@ -34,7 +34,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pylab
 from matplotlib.patches import Rectangle  
 import seaborn as sns
+from sklearn import datasets, linear_model
 
+
+    
 MyDir = 'D:/Krishna/Project/data/RS_data'  #Type the path to your data
 Dir_CA='D:/Krishna/Project/data/Mort_Data/CA'
 Dir_fig='D:/Krishna/Project/figures'
@@ -88,19 +91,18 @@ def get_marker_size(ax,fig,loncorners,grid_size,marker_factor):
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     width, height = bbox.width, bbox.height
     width *= fig.dpi
-    marker_size=width*grid_size/np.diff(loncorners)[0]/4*marker_factor
+    marker_size=width*grid_size/100/np.diff(loncorners)[0]/4*marker_factor
     return marker_size
 
 
-def mean_anomaly(Df):
+def median_anomaly(Df):
     mean=Df.groupby(Df.index.dayofyear).mean()
     sd=Df.groupby(Df.index.dayofyear).std()
     Df_anomaly=pd.DataFrame()
     for year in np.unique(Df.index.year):
         a=Df[Df.index.year==year]
         a.index=a.index.dayofyear
-        anomaly=((a-mean)/sd)
-        anomaly=anomaly[anomaly<0].mean()
+        anomaly=((a-mean)/sd).median()
         anomaly.name=pd.Timestamp(year,1,1)
         Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
     Df_anomaly=Df_anomaly.T

@@ -69,28 +69,6 @@ fig.text(0.1,0.67,'Fractional area \n Mortality',horizontalalignment='center',ve
 fig.text(0.1,0.33,'Min. $VOD_{ASCAT}$ \n anomaly',horizontalalignment='center',verticalalignment='center',rotation=90)
 plt.show()
 
-
-#KDE
-fig, axs = plt.subplots(nrows=rows,ncols=cols,figsize=(fig_width,fig_height),\
-                        sharey='row')
-plt.subplots_adjust(wspace=0.2,hspace=0.2)
-for year in year_range:   
-    mort_data_plot=mort_09_15[mort_09_15.index.year==year]
-    ax=axs[0,year-year_range[0]]
-    ax.set_title(str(year))
-    plot_mort=mort_data_plot.T.plot(kind='kde',ax=ax,legend=False,color='r')  
-    ax.set_ylabel('Kernel Density \n of FAM')
-    ax.set_xlim([-0.1,1.1])
-    VOD_data_plot=VOD_anomaly[VOD_anomaly.index.year==year]
-    VOD_data_plot=VOD_data_plot[VOD_data_plot>=-100]
-    ax=axs[1,year-year_range[0]]
-    plot_vod=VOD_data_plot.T.plot(kind='kde',ax=ax,legend=False,color='b')
-    ax.set_ylabel('Kernel Density \n of $VOD_{ASCAT}$')
-    ax.set_xlim([-3,-1])
-    ax.invert_xaxis()
-plt.show()
-
-
 ## all in one kde plots
 sns.set_style("darkgrid")
 fig, axs = plt.subplots(nrows=1,ncols=2,figsize=(8,4))

@@ -25,7 +25,7 @@ VOD_PM.drop('gridID',inplace=True)
 VOD_PM.index=[x[:-1] for x in VOD_PM.index] 
 VOD_PM.index=pd.to_datetime(VOD_PM.index,format='%Y%j')
 VOD_PM=VOD_PM[VOD_PM.index.dayofyear!=366]
-VOD_PM_anomaly=min_anomaly(VOD_PM)
+VOD_PM_anomaly=median_anomaly(VOD_PM)
 store = pd.HDFStore(Dir_CA+'/mort.h5')          
 mort=store['mort']
 mort.index.name='gridID'

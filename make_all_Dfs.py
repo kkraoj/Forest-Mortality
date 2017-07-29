@@ -21,6 +21,7 @@ mort=mort.T
 mort.drop('gridID',inplace=True)
 mort.index=[x[-4:] for x in mort.index] 
 mort.index=pd.to_datetime(mort.index)
+mort.fillna(0,inplace=True)
 store_major['mortality_025_grid']=mort
 
 store = pd.HDFStore(Dir_CA+'/vodDf.h5')#ascending is 1:30 PM
@@ -46,7 +47,15 @@ store = pd.HDFStore(Dir_CA+'/sigma0.h5')
 sigma0=store['sigma0']
 sigma0.index=pd.to_datetime(sigma0.index,format='%Y%j')           
 store_major['vod_005_grid']=sigma0
-           
+
+store = pd.HDFStore(Dir_CA+'/Young_Df.h5') 
+cwd=store['cwd_acc']
+cwd.index.name='gridID'
+cwd=cwd.T
+cwd.drop('gridID',inplace=True)
+cwd.index=pd.to_datetime(cwd.index,format='%Y')
+store_major['cwd']=cwd
+    
 store_major.close()
 store.close()
            

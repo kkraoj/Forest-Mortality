@@ -39,6 +39,8 @@ from scipy.stats import gaussian_kde
 from sklearn import datasets, linear_model
 lm = linear_model.LinearRegression(fit_intercept=True)
 from matplotlib.ticker import FormatStrFormatter
+from scipy import optimize
+import pickle
 
     
 MyDir = 'D:/Krishna/Project/data/RS_data'  #Type the path to your data
@@ -47,12 +49,8 @@ Dir_fig='D:/Krishna/Project/figures'
 Dir_mort='D:/Krishna/Project/data/Mort_Data/CA_Mortality_Data'
 Dir_NLDAS=MyDir+'/NLDAS'
 
-def ind(thresh,mort):
-    ind=[l for l in mort.columns if mort.loc['2016-01-01',l] >=thresh]
-    return ind
-
 def box_equal_nos(x,y,boxes,thresh):
-#    x=data_anomaly # for debugging only!!!!!!!!!!!!!!!!!!
+#    x=data_anomaly # for debugging only
 #    y=mort
     x=x.values.flatten(); y=y.values.flatten()
     inds=x.argsort()
@@ -66,9 +64,9 @@ def box_equal_nos(x,y,boxes,thresh):
 #    x=x[inds];  y=y[inds]
     x_range=x.max()-x.min()
     if x_range/boxes < 0.1:
+        round_digits=3
+    elif x_range/boxes < 1:
         round_digits=2
-    elif x_range/boxes < 0.5:
-        round_digits=1
     else: 
         round_digits=0
     count=len(x)/boxes
@@ -153,3 +151,68 @@ def mean_anomaly(Df): #mean of anomaly
         Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
     Df_anomaly=Df_anomaly.T
     return Df_anomaly  
+
+def clean_xy(x,y,rep_times,thresh):
+    # for testing ONLY
+#    x=data_anomaly.values.flatten()
+#    y=np.log10(mort.values.flatten())
+    non_nan_ind=np.where(~np.isnan(x))[0]
+    x=x.take(non_nan_ind);y=y.take(non_nan_ind)
+    non_nan_ind=np.where(~np.isnan(y))[0]
+    x=x.take(non_nan_ind);y=y.take(non_nan_ind)
+    inds=np.where(y>=thresh)[0]
+    x=x.take(inds)  ;y=y.take(inds)
+    x=np.repeat(x,rep_times);y=np.repeat(y,rep_times)
+    xy = np.vstack([x,y])
+    z = gaussian_kde(xy)(xy)
+    idx = z.argsort()
+    x, y, z = x[idx], y[idx], z[idx]
+    return x,y,z
+
+#year='2015'
+#grid='grid'
+#table=Dir_mort+"/"+grid+".gdb/ADS"+year[-2:]+"_i_j" 
+#columns=['gridID','TPA1','Shape_Area','HOST1','HOST2','FOR_TYPE1']
+def build_df_from_arcpy(table, columns='all'):
+    if columns=='all':
+        columns=[f.name for f in arcpy.ListFields(table)]
+    cursor = arcpy.SearchCursor(table)
+    Df=pd.DataFrame(columns=columns)
+    for row in cursor:
+        data=pd.DataFrame([row.getValue(x) for x in columns],index=columns,dtype='str').T
+        Df=Df.append(data)
+    arcpy.Compact_management(Dir_mort+'/species.gdb')
+    return Df
+
+def piecewise_linear(x, x0, y0, k1, k2):
+    return np.piecewise(x, [x < x0], [lambda x:k1*x + y0-k1*x0, lambda x:k2*x + y0-k2*x0])
+
+def ind(thresh,mort):
+    ind=[l for l in mort.columns if mort.loc['2016-01-01',l] >=thresh]
+    return ind
+
+def ind_species(species):
+    #input 'c' or 'd' and get indices
+    os.chdir(Dir_CA)
+    with open('grid_to_species.txt', 'rb') as fp:
+        for_type = pickle.load(fp)
+    out=[i[0] for i in for_type if i[1]==species]
+    return out
+
+def ind_small_species(species):
+    #input 'c' or 'd' and get indices
+    os.chdir(Dir_CA)
+    with open('small_grid_%s.txt'%species, 'rb') as fp:
+        out = pickle.load(fp)
+    return out
+
+def mask_columns(columns=None,*dataframes):
+#    df=mort
+#    columns=ind_small_species(species)
+    i=0
+    out=range(len(dataframes))
+    for df in dataframes:                    
+        mask = ((df == df) | df.isnull()) & (df.columns.isin(columns))
+        out[i]=df.mask(~mask)
+        i+=1
+    return(out)

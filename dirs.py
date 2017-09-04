@@ -41,6 +41,9 @@ lm = linear_model.LinearRegression(fit_intercept=True)
 from matplotlib.ticker import FormatStrFormatter
 from scipy import optimize
 import pickle
+from matplotlib import ticker
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.svm import SVR
 
     
 MyDir = 'D:/Krishna/Project/data/RS_data'  #Type the path to your data
@@ -122,35 +125,7 @@ def min_anomaly(Df):
     Df_min_anomaly=Df_min_anomaly.T
     return Df_min_anomaly
 
-def year_anomaly_mean(Df): #anomaly of mean
-    mean=Df.mean()
-    sd=Df.std()
-    Df_anomaly=pd.DataFrame()
-    for year in np.unique(Df.index.year):
-        a=Df[Df.index.year==year].mean()
-#        a.index=a.index.dayofyear
-        anomaly=((a-mean)/sd)
-#        anomaly=anomaly.median()
-        anomaly.name=pd.Timestamp(year,1,1)
-        anomaly.replace([np.inf, -np.inf], 0,inplace=True)
-        Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
-    Df_anomaly=Df_anomaly.T
-    return Df_anomaly   
-
-def mean_anomaly(Df): #mean of anomaly
-    mean=Df.groupby(Df.index.dayofyear).mean()
-    sd=Df.groupby(Df.index.dayofyear).std()
-    Df_anomaly=pd.DataFrame()
-    for year in np.unique(Df.index.year):
-        a=Df[Df.index.year==year]
-        a.index=a.index.dayofyear
-        anomaly=((a-mean)/sd)
-        anomaly=anomaly.mean()
-        anomaly.replace([np.inf, -np.inf], 0,inplace=True)
-        anomaly.name=pd.Timestamp(year,1,1)
-        Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
-    Df_anomaly=Df_anomaly.T
-    return Df_anomaly  
+  
 
 def clean_xy(x,y,rep_times,thresh):
     # for testing ONLY
@@ -167,6 +142,8 @@ def clean_xy(x,y,rep_times,thresh):
     z = gaussian_kde(xy)(xy)
     idx = z.argsort()
     x, y, z = x[idx], y[idx], z[idx]
+#    x, y, z = np.reshape(x,(len(x),1)), np.reshape(y,(len(y),1)),\
+#                        np.reshape(z,(len(z),1))
     return x,y,z
 
 #year='2015'
@@ -213,6 +190,82 @@ def mask_columns(columns=None,*dataframes):
     out=range(len(dataframes))
     for df in dataframes:                    
         mask = ((df == df) | df.isnull()) & (df.columns.isin(columns))
-        out[i]=df.mask(~mask)
+        df=df.mask(~mask)
+#        df.fillna(0,inplace=True)
+        out[i]=df
         i+=1
+    if i==1:
+        out=out[0]
     return(out)
+
+def year_anomaly_mean(Df): #anomaly of mean
+    mean=Df.mean()
+    sd=Df.std()
+    Df_anomaly=pd.DataFrame()
+    for year in np.unique(Df.index.year):
+        a=Df[Df.index.year==year].mean()
+#        a.index=a.index.dayofyear
+        anomaly=((a-mean)/sd)
+#        anomaly=anomaly.median()
+        anomaly.name=pd.Timestamp(year,1,1)
+        anomaly.replace([np.inf, -np.inf], 0,inplace=True)
+        Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
+    Df_anomaly=Df_anomaly.T
+    return Df_anomaly   
+
+def mean_anomaly(Df): #mean of anomaly
+    mean=Df.groupby(Df.index.dayofyear).mean()
+    sd=Df.groupby(Df.index.dayofyear).std()
+    Df_anomaly=pd.DataFrame()
+    for year in np.unique(Df.index.year):
+        a=Df[Df.index.year==year]
+        a.index=a.index.dayofyear
+        anomaly=((a-mean)/sd)
+        anomaly=anomaly.mean()
+        anomaly.replace([np.inf, -np.inf], 0,inplace=True)
+        anomaly.name=pd.Timestamp(year,1,1)
+        Df_anomaly=pd.concat([Df_anomaly,anomaly],1)
+    Df_anomaly=Df_anomaly.T
+    return Df_anomaly
+
+
+def RWC(Df):
+    out=(Df.groupby(Df.index.year).quantile(0.05)-Df.quantile(0.05))/\
+        (Df.quantile(0.95)-Df.quantile(0.05))
+    out[(out>1.0)]=np.nan
+    out[(out<0.0)]=np.nan        
+    out.index=pd.to_datetime(out.index,format='%Y')
+    return out
+
+def RWC(Df):
+    out=(Df.groupby(Df.index.year).mean()-Df.min())/\
+        (Df.max()-Df.min())
+    out[(out>1.0)]=np.nan
+    out[(out<0.0)]=np.nan        
+    out.index=pd.to_datetime(out.index,format='%Y')
+    return out
+
+def log_anomaly(Df):
+    out=np.log10((Df.groupby(Df.index.year).median()/Df.quantile(0.95)))
+#    out[(out>1.0)]=np.nan
+#    out[(out<0.0)]=np.nan        
+    out.index=pd.to_datetime(out.index,format='%Y')
+    return out
+
+def median_div_max(Df):
+    out=((Df.groupby(Df.index.year).median()/Df.quantile(0.95)))
+#    out[(out>1.0)]=np.nan
+#    out[(out<0.0)]=np.nan        
+    out.index=pd.to_datetime(out.index,format='%Y')
+    return out
+
+def min_div_max(Df):
+    out=((Df.groupby(Df.index.year).quantile(0.05)/Df.quantile(0.95)))
+#    out[(out>1.0)]=np.nan
+#    out[(out<0.0)]=np.nan        
+    out.index=pd.to_datetime(out.index,format='%Y')
+    return out
+
+def cwd_accumulate(df,start_year,end_year):
+    df=df.loc[(df.index.year<=end_year) & (df.index.year>=start_year)]
+    return df.sum()

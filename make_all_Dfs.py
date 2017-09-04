@@ -20,7 +20,7 @@ mort.index.name='gridID'
 mort=mort.T
 mort.drop('gridID',inplace=True)
 mort.index=[x[-4:] for x in mort.index] 
-mort.index=pd.to_datetime(mort.index)
+mort.index=pd.to_datetime(mort.index,format='%Y')
 mort.fillna(0,inplace=True)
 store_major['mortality_025_grid']=mort
 

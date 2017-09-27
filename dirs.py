@@ -44,6 +44,7 @@ import pickle
 from matplotlib import ticker
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR
+from IPython.display import display, HTML
 
     
 MyDir = 'D:/Krishna/Project/data/RS_data'  #Type the path to your data
@@ -230,16 +231,16 @@ def mean_anomaly(Df): #mean of anomaly
 
 
 def RWC(Df):
-    out=(Df.groupby(Df.index.year).quantile(0.05)-Df.quantile(0.05))/\
+    out=(Df.groupby(Df.index.year).quantile(0.5)-Df.quantile(0.05))/\
         (Df.quantile(0.95)-Df.quantile(0.05))
-    out[(out>1.0)]=np.nan
-    out[(out<0.0)]=np.nan        
+    out[(out>1.0)]=1
+    out[(out<0.0)]=0        
     out.index=pd.to_datetime(out.index,format='%Y')
     return out
 
-def RWC(Df):
-    out=(Df.groupby(Df.index.year).mean()-Df.min())/\
-        (Df.max()-Df.min())
+def RWC_detail(Df,upper_quantile):
+    out=(Df.groupby(Df.index.year).quantile(0.5)-Df.quantile(1-upper_quantile))/\
+        (Df.quantile(upper_quantile)-Df.quantile(1-upper_quantile))
     out[(out>1.0)]=np.nan
     out[(out<0.0)]=np.nan        
     out.index=pd.to_datetime(out.index,format='%Y')

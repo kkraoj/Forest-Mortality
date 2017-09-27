@@ -20,22 +20,22 @@ start_year=2009
 start_month=7
 months_window=3
 data2_label='CWD annually \naccumulated'
-data_label="VOD \nanomaly"
+data_label="RWC"
 #data2_label=data_label
 cmap='viridis'
 alpha=0.7
 species='evergreen'
-species='deciduous'
+#species='deciduous'
 mort_label='Dead trees\nper acre'
-#mort_label='Fractional area\nof mortality'
+mort_label='Fractional area\nof mortality'
 
 #----------------------------------------------------------------------
-mort=store['TPA_%s_%03d_grid'%(species,grid_size)]
+mort=store['mortality_%s_%03d_grid'%(species,grid_size)]
 mort=mort[mort>0]
 mort_main=mort.copy()
 data2_anomaly=data2
 data=data.loc[(data.index.month>=start_month) & (data.index.month<start_month+months_window)]
-data_anomaly=year_anomaly_mean(data)
+data_anomaly=RWC(data)
 end_year=min(max(mort.index.year),max(data.index.year))
 data_anomaly=data_anomaly[(data_anomaly.index.year>=start_year) &\
                           (data_anomaly.index.year<=end_year)]
@@ -73,7 +73,7 @@ sns.set_style("white")
 fig, axs = plt.subplots(nrows=rows,ncols=cols,figsize=(fig_width,fig_height),\
                         sharey='row')
 marker_size=get_marker_size(axs[0,0],fig,loncorners,grid_size,marker_factor)
-plt.subplots_adjust(wspace=0.04,hspace=0.04)
+plt.subplots_adjust(wspace=0.04,hspace=0.1)
 for year in year_range:   
     mort_plot=mort[mort.index.year==year]
     ax=axs[0,year-year_range[0]]
@@ -96,7 +96,7 @@ for year in year_range:
             llcrnrlon=loncorners[0],urcrnrlon=loncorners[1],\
             ax=ax)
     m.readshapefile(Dir_CA+'/CA','CA',drawbounds=True, color='black')
-    plot_data=m.scatter(lats, lons,s=marker_size,c=data_plot,cmap=cmap+'_r'\
+    plot_data=m.scatter(lats, lons,s=marker_size,c=data_plot,cmap=cmap\
                        ,marker='s',vmin=0.9*data_min,vmax=0.9*data_max)
     #-------------------------------------------------------------------
     data2_plot=data2_anomaly[data2_anomaly.index.year==year]
@@ -115,7 +115,7 @@ cb1=fig.colorbar(plot_data,ax=axs[1,:].ravel().tolist(), fraction=0.01,\
 cb2=fig.colorbar(plot2_data,ax=axs[2,:].ravel().tolist(), fraction=0.01,\
                  aspect=20,pad=0.02)
 cb2.ax.text(1,0.9,'  (mm)',horizontalalignment='left',fontsize=12)
-cb1.ax.invert_yaxis()
+#cb1.ax.invert_yaxis()
 axs[0,0].set_ylabel(mort_label,rotation = 0,labelpad=50)
 axs[1,0].set_ylabel(data_label,rotation = 0,labelpad=30)
 axs[2,0].set_ylabel(data2_label,rotation = 0,labelpad=50)
@@ -135,9 +135,10 @@ x,y,z=clean_xy(x,y,rep_times,thresh)
 plot_data=ax.scatter(x,y,c=z,edgecolor='',cmap=cmap,alpha=alpha,marker='s',s=scatter_size)
 ax.set_xlabel(data_label)
 ax.set_ylabel(mort_label,labelpad=50,rotation = 0)
-ax.set_xlim([-3,3])
-ax.invert_xaxis()
-popt , pcov = optimize.curve_fit(piecewise_linear, x, y)
+#ax.set_xlim([-3,3])
+#ax.invert_xaxis()
+guess=(0.01,0.05,1e-4,1e-2)
+popt , pcov = optimize.curve_fit(piecewise_linear, x, y, guess)
 perr = np.sqrt(np.diag(pcov))
 xd = np.linspace(min(x), max(x), 1000)
 ax.plot(xd, piecewise_linear(xd, *popt),'r--',linewidth=1)

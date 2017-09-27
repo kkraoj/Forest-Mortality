@@ -5,6 +5,7 @@ Created on Sat Jul 22 14:41:22 2017
 @author: kkrao
 """
 ###response is number of dead trees
+from __future__ import division
 from dirs import *
 os.chdir(Dir_CA)
 sns.set(font_scale=1.2)
@@ -16,7 +17,7 @@ data2=(store['cwd'])
 data=(store['vod_pm']) 
 #data2=data.copy()
 grid_size=25
-start_year=2009
+start_year=2014
 start_month=7
 months_window=3
 data2_label='CWD annually \naccumulated'
@@ -35,7 +36,7 @@ mort=mort[mort>0]
 mort_main=mort.copy()
 data2_anomaly=data2
 data=data.loc[(data.index.month>=start_month) & (data.index.month<start_month+months_window)]
-data_anomaly=RWC(data,start_month,months_window)
+data_anomaly=RWC(data)
 end_year=min(max(mort.index.year),max(data.index.year))
 data_anomaly=data_anomaly[(data_anomaly.index.year>=start_year) &\
                           (data_anomaly.index.year<=end_year)]
@@ -96,7 +97,7 @@ for year in year_range:
             llcrnrlon=loncorners[0],urcrnrlon=loncorners[1],\
             ax=ax)
     m.readshapefile(Dir_CA+'/CA','CA',drawbounds=True, color='black')
-    plot_data=m.scatter(lats, lons,s=marker_size,c=data_plot,cmap=cmap+'_r'\
+    plot_data=m.scatter(lats, lons,s=marker_size,c=data_plot,cmap=cmap\
                        ,marker='s',vmin=0.9*data_min,vmax=0.9*data_max)
     #-------------------------------------------------------------------
     data2_plot=data2_anomaly[data2_anomaly.index.year==year]
@@ -115,7 +116,6 @@ cb1=fig.colorbar(plot_data,ax=axs[1,:].ravel().tolist(), fraction=0.01,\
 cb2=fig.colorbar(plot2_data,ax=axs[2,:].ravel().tolist(), fraction=0.01,\
                  aspect=20,pad=0.02)
 cb2.ax.text(1,0.9,'  (mm)',horizontalalignment='left',fontsize=12)
-cb1.ax.invert_yaxis()
 cb1.set_ticks(np.linspace(0.2,0.8,4))
 cb1.set_ticklabels(np.linspace(0.2,0.8,4))
 axs[0,0].set_ylabel(mort_label,rotation = 0,labelpad=50)
@@ -188,3 +188,104 @@ fig.suptitle('Scatter plot relating mortality with indicators')
 cbaxes.text(0,1.2,'Density')
 #ax.annotate('%s trees'%species, xy=(0.05, 0.9), xycoords='axes fraction',\
 #            ha='left')
+
+##---------------------------------------------------------------------------
+#
+#"""
+#RWC detail plot.
+#plotting only 2015 RWC for different percentiles of RWC definition
+#"""
+#rows=1
+#cols=6
+#fig_width=zoom*cols
+#fig_height=1.5*zoom*rows
+#fig, axs = plt.subplots(nrows=rows,ncols=cols,figsize=(fig_width,fig_height),\
+#                        sharey='row')
+#marker_size=get_marker_size(axs[0],fig,loncorners,grid_size,marker_factor)
+#plt.subplots_adjust(wspace=0.04,hspace=0.04,top=0.8,bottom=0)
+#for col in range(cols):   
+#    #---------------------------------------------------------------
+#    upper_quantile=0.95+col/100
+#    data_anomaly=RWC_detail(data,upper_quantile)
+#    data_plot=data_anomaly[data_anomaly.index.year==2015]
+#    ax=axs[col]
+#    m = Basemap(projection='cyl',lat_0=45,lon_0=0,resolution='l',\
+#            llcrnrlat=latcorners[0],urcrnrlat=latcorners[1],\
+#            llcrnrlon=loncorners[0],urcrnrlon=loncorners[1],\
+#            ax=ax)
+#    m.readshapefile(Dir_CA+'/CA','CA',drawbounds=True, color='black')
+#    plot_data=m.scatter(lats, lons,s=marker_size,c=data_plot,cmap=cmap\
+#                       ,marker='s',vmin=0,vmax=1)
+#    ax.set_xlabel('%1.2f'%upper_quantile,fontsize=10)
+#    #-------------------------------------------------------------------
+#cb1=fig.colorbar(plot_data,ax=axs.tolist(), fraction=0.01,\
+#                 aspect=20,pad=0.02)
+##cb1.ax.invert_yaxis()
+#cb1.set_ticks(np.linspace(0.2,0.8,4))
+#cb1.set_ticklabels(np.linspace(0.2,0.8,4))
+#axs[0].set_ylabel(data_label,rotation = 0,labelpad=50)
+#fig.suptitle('2015 maps of RWC')
+#axs[0].annotate('upper cutoff percentile =', xy=(-0.1, -0.13), xycoords='axes fraction',\
+#            ha='right',fontsize=10)
+#plt.show()
+##------------------------------------------------------------------
+#"""
+#script to output values of RWC details for nan cells when upper limit 
+#set to 0.95
+#"""
+#VOD_median=data[data.index.year==2015].quantile(0.5).loc[360]
+#cols=5
+#Df=pd.DataFrame()
+#for col in range(cols): 
+#    upper_quantile=0.99-col/100
+#    upper_cutoff=data.quantile(upper_quantile).loc[360]
+#    lower_cutoff=data.quantile(1-upper_quantile).loc[360]
+#    RWC_value=RWC_detail(data,upper_quantile)[data_anomaly.index.year==2015].\
+#                        loc['2015-01-01',360]
+#    output_values=[VOD_median,upper_cutoff,lower_cutoff,RWC_value]
+#    output_values=pd.DataFrame(data=output_values,\
+#                   columns=['%1.2f'%upper_quantile],\
+#                   index=['Season median','upper cutoff','lower cutoff','RWC'])
+#    Df=pd.concat([Df,output_values],axis='columns') 
+#Df.columns.name='upper cutoff percentile' 
+display(HTML(data.head().to_html()))
+#sns.set_style('darkgrid')  
+#alpha=0.5
+#fig, ax = plt.subplots(1,1,figsize=(3,3))                 
+#data.loc[:,360].hist(normed=True,ax=ax,alpha=alpha,label='all years',bins=40)
+#data[data.index.year==2015].loc[:,360].hist(normed=True,ax=ax,alpha=alpha,label='2015')
+#ax.set_xlabel('VOD')
+#ax.set_ylabel('Normalized\nfrequency')
+#ax.set_title('Distribution of VOD for sample grid cell')
+#plt.legend()
+#
+#
+##------------------------------------------------------------------
+#alpha=0.5
+#rows=1
+#cols=mort.shape[0]
+#fig_width=zoom*cols
+#fig_height=1.5*zoom*rows
+#fig, axs = plt.subplots(nrows=rows,ncols=cols,figsize=(fig_width,fig_height),\
+#                        sharey='row')
+#marker_size=get_marker_size(axs[0],fig,loncorners,grid_size,marker_factor)
+#plt.subplots_adjust(wspace=0.04,hspace=0.04,top=0.7,bottom=-0.1)
+#for year in year_range:   
+#    #---------------------------------------------------------------
+#    ax=axs[year-year_range[0]]
+#    p1=data.quantile(0.95).hist(normed=True,ax=ax,alpha=alpha,\
+#                    color='lightcoral',label='$upper\:cutoff_{all\:years}$')
+#    p2=data.quantile(0.05).hist(normed=True,ax=ax,alpha=alpha,\
+#                    color='seagreen',label='$lower\:cutoff_{all\:years}$')
+#    p3=data[data.index.year==year].quantile(0.5).hist(normed=True,\
+#           ax=ax,alpha=alpha,color='royalblue',\
+#           label='$median_{season}$')
+#    ax.set_title(str(year))
+#    #-------------------------------------------------------------------
+#axs[3].set_xlabel('VOD')
+#axs[0].set_ylabel('Normalized\nfrequency',rotation = 0,labelpad=50,va='center')
+#fig.suptitle('Distribution of VOD')
+#handles, labels = ax.get_legend_handles_labels()
+#plt.legend(handles,labels,fontsize=10,loc='lower right',bbox_to_anchor=[1,-0.8])
+#plt.show()
+#

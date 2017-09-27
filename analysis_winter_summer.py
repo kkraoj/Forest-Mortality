@@ -66,7 +66,8 @@ data_winter.plot(legend=False,color='royalblue',alpha=alpha,ax=ax,\
                  lw=0.5,linestyle='',marker='.',markersize=0.5,label='Winter')
 data_summer[0].plot(color='lightcoral',alpha=alpha,ax=ax,\
                  lw=1,linestyle='-',label='Summer')
-handles, labels = ax.get_legend_handles_labels()
+
+
 l1=handles[-1]
 data_winter[0].plot(color='royalblue',alpha=alpha,ax=ax,\
                  lw=1,label='Winter')

@@ -61,7 +61,8 @@ g+geom_col(fill='dodgerblue3')+coord_flip()+labs(y='Importance',x='Features',tit
 ##Part C
 ```{r}
 sqrt(test.err[ntree])
-fit$r.squared
+fit$r.squared #training r squared
+
 ```
 
 

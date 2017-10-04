@@ -58,4 +58,93 @@ store_major['cwd']=cwd
     
 store_major.close()
 store.close()
+
+###----------------------------------------------------------------------------
+def seasonal_transform(data,season):
+    start_month=7
+    months_window=3
+    if season=='win':
+        start_month=1
+    data=data.loc[(data.index.month>=start_month) & (data.index.month<start_month+months_window)]
+    return data
+
+store['RWC']=data_anomaly 
+cwd=store['cwd']
+cwd.index.name='cwd'
+store['cwd']=cwd
+     
+mort=store['mortality_025_grid']
+mort.index.name='FAM'
+store['mortality_025_grid']=mort
+
+LAI=store['LAI_025_grid']
+for season in ['sum','win']:
+    df=seasonal_transform(LAI,season)
+    df=df.groupby(df.index.year).mean()
+    df.index=pd.to_datetime(df.index,format='%Y')
+    df.index.name='LAI_%s'%season
+    store['LAI_025_grid_%s'%season]=df
+
+###----------------------------------------------------------------------------
+df=store['BPH_025_grid']
+df.index.name='live_tree_density'
+store['BPH_025_grid']=df
+
+###----------------------------------------------------------------------------
+import pickle
+os.chdir(Dir_CA)
+nos=370
+with open('grid_to_species.txt', 'rb') as fp:
+    for_type = pickle.load(fp)
+Df=pd.DataFrame(np.full((11,nos),np.NaN), \
+                           index=[pd.to_datetime(year_range,format='%Y')],\
+                                 columns=range(nos))
+for species in ['c','d']:
+    index=[i[0] for i in for_type if i[1]==species]
+    Df.loc[:,Df.columns.intersection(index)]=species
+Df.replace(['c','d'],['evergreen','deciduous'],inplace=True)
+Df.index.name='dominant_leaf_habit'
+store[Df.index.name]=Df
+store.close()
+###----------------------------------------------------------------------------
+store=pd.HDFStore(Dir_CA+'/data.h5')
+for field in ['ppt']:
+    for season in ['sum','win']:
+        df=store[field]
+        df=seasonal_transform(df,season)
+        df=df.groupby(df.index.year).sum()
+        df.index=pd.to_datetime(df.index,format='%Y')
+        df.index.name='%s_%s'%(field,season)
+        store[df.index.name]=df
+###----------------------------------------------------------------------------
+store=pd.HDFStore(Dir_CA+'/data.h5')
+for field in ['PEVAP','EVP']:
+    for season in ['sum','win']:
+        df=store[field]
+        df=seasonal_transform(df,season)
+        df=df.groupby(df.index.year).sum()
+        df.index=pd.to_datetime(df.index,format='%Y')
+        df.index.name='%s_%s'%(field,season)
+        store[df.index.name]=df
+
+###----------------------------------------------------------------------------
+store=pd.HDFStore(Dir_CA+'/data.h5')
+for field in ['vpdmax']:
+    for season in ['sum','win']:
+        df=store[field]
+        df=seasonal_transform(df,season)
+        df=df.groupby(df.index.year).mean()
+        df.index=pd.to_datetime(df.index,format='%Y')
+        df.index.name='%s_%s'%(field,season)
+        store[df.index.name]=df
+store=pd.HDFStore(Dir_CA+'/data.h5')
+###----------------------------------------------------------------------------
+for field in ['tmax']:
+    for season in ['sum','win']:
+        df=store[field]
+        df=seasonal_transform(df,season)
+        df=df.groupby(df.index.year).mean()
+        df.index=pd.to_datetime(df.index,format='%Y')
+        df.index.name='%s_%s'%(field,season)
+        store[df.index.name]=df             
            

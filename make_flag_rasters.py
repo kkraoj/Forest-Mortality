@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Apr 30 00:35:32 2017
-
 @author: kkrao
 """
 from dirs import *

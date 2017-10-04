@@ -5,7 +5,11 @@ Created on Sun Apr 30 00:35:32 2017
 @author: kkrao
 """
 ## Makes data df
-from dirs import *
+import arcpy
+import os
+import pandas as pd
+import numpy as np
+from dirs import Dir_NLDAS
 arcpy.env.overwriteOutput=True
 year_range=range(2005,2017)
 month_range=range(1,13)
@@ -64,9 +68,7 @@ store.close()
 #            
 #            
 #            
-            
-            
-            
+
             
             
             

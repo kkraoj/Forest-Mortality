@@ -19,7 +19,11 @@ library(ggplot2)
 data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 set.seed(10)
 train.fraction=0.7
-FAM.threshold=0.1
+FAM.threshold=0.2
+FAM.cutoff=0.00
+```
+```{r}
+data=data[data$FAM>FAM.cutoff,]
 data.high=data[data$FAM>FAM.threshold,]
 data.low=data[data$FAM<=FAM.threshold,]
 train.high.ind=sample(1:nrow(data.high),size = train.fraction*dim(data.high)[1])
@@ -33,28 +37,47 @@ ntree=50
 test.err=double(ntree)
 test.err.low=double(ntree)
 test.err.high=double(ntree)
-for(i in 1:ntree)
-{
-  fit=ranger(FAM~.,data=train.data,num.trees=i,importance="impurity",seed=100,keep.inbag=TRUE)
-  pred=predict(fit,testX,type='se')
-  test.err[i]=with(testX,mean((testY-pred$predictions)^2))
-}
-data_to_plot=data.frame(test.err)
-colnames(data_to_plot)='test_error'
-g=ggplot(data_to_plot,aes(x=as.numeric(rownames(data_to_plot)),y=data_to_plot))
-g+
-  geom_line(color='chocolate',size=2)+
-  labs(y='Mean squared test error',x='Number of trees',title='Stabilization of test error')+
-  theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
+# for(i in 1:ntree)
+# {
+#   fit=ranger(FAM~.,data=train.data,num.trees=i,importance="impurity",seed=11,keep.inbag=TRUE)
+#   pred=predict(fit,testX,type='se')
+#   test.err[i]=with(testX,mean((testY-pred$predictions)^2))
+# }
+# data_to_plot=data.frame(test.err)
+# colnames(data_to_plot)='test_error'
+# g=ggplot(data_to_plot,aes(x=as.numeric(rownames(data_to_plot)),y=data_to_plot))
+# g+
+#   geom_line(color='chocolate',size=2)+
+#   labs(y='Mean squared test error',x='Number of trees',title='Stabilization of test error')+
+#   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
 
 ```
 
 ##Part B
 ```{r}
-data_to_plot=data.frame(fit$variable.importance)
-colnames(data_to_plot)='importance'
-g=ggplot(data_to_plot,aes(reorder(row.names(data_to_plot),data_to_plot$importance),data_to_plot$importance))
-g+geom_col(fill='dodgerblue3')+coord_flip()+labs(y='Importance',x='Features',title='Feature importance chart')+
+max.iter=10
+imp.frame=data.frame(row.names=1:27)
+for (i in 1:max.iter)
+{
+  fit=ranger(FAM~.,data=train.data,importance="impurity",seed=i,keep.inbag=TRUE)
+  imp=data.frame(fit$variable.importance)
+  colnames(imp)=i
+  imp.frame=cbind(imp.frame,imp)
+}
+row.names(imp.frame)=row.names(imp)
+pred=predict(fit,testX,type='se')
+importance.mean=data.frame(apply(imp.frame, 1, mean))
+colnames(importance.mean)='mean'
+importance.sd=data.frame(apply(imp.frame, 1, sd))
+colnames(importance.sd)='sd'
+importance=cbind(importance.mean,importance.sd)
+importance=importance[order(-importance$mean),]
+  
+g=ggplot(importance,aes(x=reorder(row.names(importance),importance$mean),y=mean))
+g+geom_col(fill='dodgerblue3')+
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
+  coord_flip()+
+  labs(y='Importance',x='Features',title='Feature importance chart')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
 ```
 
@@ -62,7 +85,11 @@ g+geom_col(fill='dodgerblue3')+coord_flip()+labs(y='Importance',x='Features',tit
 ```{r}
 sqrt(test.err[ntree])
 fit$r.squared #training r squared
-
+SS.total      <- sum((testY - mean(train.data$FAM))^2)
+SS.residual   <- sum((testY - pred$predictions)^2)
+SS.regression <- sum((pred$predictions - mean(train.data$FAM))^2)
+test.rsq <- 1 - SS.residual/SS.total
+print(test.rsq)
 ```
 
 
@@ -76,37 +103,63 @@ get_density <- function(x, y, n = 100) {
   return(dens$z[ii])
 }
 require(gridExtra)
-dat=cbind(test.data,pred$predictions)
-dat$density <- get_density(dat$RWC, dat$FAM)
-p1=ggplot(data=dat, aes(x=RWC, y=FAM, group=1)) +
+test.data['predicted_FAM']=pred$predictions
+test.data$density <- get_density(test.data$RWC, test.data$FAM)
+p1=ggplot(data=test.data, aes(x=RWC, y=FAM, group=1)) +
   geom_point(aes(color=density))+theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))+
   theme(legend.position="none")+
   labs(title='')+
   # coord_fixed(ratio = 2)+
-  geom_line(color='brown1',aes(x=RWC,y=pred$predictions))+
-  geom_ribbon(aes(ymin=ifelse(pred$predictions-pred$se < 0, 0, pred$predictions-pred$se)
-                    ,ymax=pred$predictions+pred$se,x=RWC,fill='band'),alpha=0.3)
-dat$density <- get_density(dat$EVP_win, dat$FAM)
-p2=ggplot(data=dat, aes(x=EVP_win, y=FAM, group=1)) +
+  geom_line(color='brown1',aes(x=RWC,y=predicted_FAM))+
+  geom_ribbon(aes(ymin=ifelse(predicted_FAM-pred$se < 0, 0, predicted_FAM-pred$se)
+                    ,ymax=predicted_FAM+pred$se,x=RWC,fill='band'),alpha=0.3)
+test.data$density <- get_density(test.data$EVP_win, test.data$FAM)
+p2=ggplot(data=test.data, aes(x=EVP_win, y=FAM, group=1)) +
   geom_point(aes(color=density))+labs(title='Model Predictions',y='',yticks='')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15), 
         axis.ticks.y = element_blank(),axis.text.y = element_blank())+
   theme(legend.position="none")+
-  geom_line(color='brown1',aes(x=EVP_win,pred$predictions))+
-  geom_ribbon(aes(ymin=ifelse(pred$predictions-pred$se < 0, 0, pred$predictions-pred$se)
-                    ,ymax=pred$predictions+pred$se,x=EVP_win,fill='band'),alpha=0.3)
+  geom_line(color='brown1',aes(x=EVP_win,predicted_FAM))+
+  geom_ribbon(aes(ymin=ifelse(predicted_FAM-pred$se < 0, 0, predicted_FAM-pred$se)
+                    ,ymax=predicted_FAM+pred$se,x=EVP_win,fill='band'),alpha=0.3)
     # coord_fixed(ratio = 30)
-dat$density <- get_density(dat$elevation_std, dat$FAM)
-p3=ggplot(data=dat, aes(x=elevation_std, y=FAM, group=1)) +
+test.data$density <- get_density(test.data$elevation_std, test.data$FAM)
+p3=ggplot(data=test.data, aes(x=elevation_std, y=FAM, group=1)) +
   geom_point(aes(color=density))+theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))+
-  geom_line(aes(x=elevation_std,pred$predictions),colour='brown1')+
+  geom_line(aes(x=elevation_std,predicted_FAM),colour='brown1')+
   theme(legend.position="none",axis.ticks.y = element_blank(),axis.text.y = element_blank())+
   labs(title='',y='')+
-  geom_ribbon(aes(ymin=ifelse(pred$predictions-pred$se < 0, 0, pred$predictions-pred$se)
-                    ,ymax=pred$predictions+pred$se,x=elevation_std,fill='band'),alpha=0.3)+
-  annotate('text',x=700,y=0.35,label=paste('R','^2',' == ',round(fit$r.squared,2)),size=6,parse=TRUE)
+  geom_ribbon(aes(ymin=ifelse(predicted_FAM-pred$se < 0, 0, predicted_FAM-pred$se)
+                    ,ymax=predicted_FAM+pred$se,x=elevation_std,fill='band'),alpha=0.3)+
+  annotate('text',x=700,y=0.35,label=paste('R','^2',' == ',round(test.rsq,2)),size=6,parse=TRUE)
 grid.arrange(p1,p2,p3,ncol=3)
 ```
 
-  
-  
+```{r, fig.width = 5, fig.height = 4}
+library(dplyr)
+ggplot(data=test.data %>% arrange(RWC), aes(x=FAM, y=predicted_FAM, group=1)) +
+  geom_point(aes(color=RWC),shape=19,size=2)+theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))+
+  labs(title='Model Performance')+
+  # theme(legend.position="none")+
+  coord_fixed(ratio = 1, xlim = c(0,0.4), ylim = c(0,0.4), expand = TRUE)
+```
+```{r, fig.width = 5, fig.height = 4}
+bias.model=mean(bias(test.data$predicted_FAM,test.data$FAM,relative=TRUE))
+print(bias.model)
+
+```
+```{r, fig.width = 5, fig.height = 4}
+size=10
+par=1:size
+est=par+runif(size,-1,1)
+bias=mean(bias(est,par,relative=TRUE))
+print(bias.model)
+
+```
+
+
+
+
+
+
+

@@ -19,7 +19,7 @@ library(ggplot2)
 data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 set.seed(10)
 train.fraction=0.7
-FAM.threshold=0.02
+FAM.threshold=0.1
 data.high=data[data$FAM>FAM.threshold,]
 data.low=data[data$FAM<=FAM.threshold,]
 train.high.ind=sample(1:nrow(data.high),size = train.fraction*dim(data.high)[1])
@@ -34,12 +34,12 @@ ntree=50
 test.err=double(ntree)
 test.err.low=double(ntree)
 test.err.high=double(ntree)
-for(i in 1:ntree)
-{
-  fit=ranger(FAM~.,data=train.data,num.trees=i,importance="impurity",seed=100,keep.inbag=TRUE)
-  pred=predict(fit,testX)
+# for(i in 1:ntree)
+# {
+#   fit=ranger(FAM~.,data=train.data,num.trees=i,importance="impurity",seed=100,keep.inbag=TRUE)
+#   pred=predict(fit,testX)
   # test.err[i]=with(testX,mean((testY-pred$predictions)^2))
-}
+# }
 # data_to_plot=data.frame(test.err)
 # colnames(data_to_plot)='test_error'
 # g=ggplot(data_to_plot,aes(x=as.numeric(rownames(data_to_plot)),y=data_to_plot))
@@ -52,6 +52,7 @@ for(i in 1:ntree)
 
 ##Part B
 ```{r}
+fit=ranger(FAM~.,data=train.data,importance="impurity",seed=100,keep.inbag=TRUE)
 data_to_plot=data.frame(fit$variable.importance)
 colnames(data_to_plot)='importance'
 g=ggplot(data_to_plot,aes(reorder(row.names(data_to_plot),data_to_plot$importance),data_to_plot$importance))
@@ -62,7 +63,7 @@ g+geom_col(fill='dodgerblue3')+coord_flip()+labs(y='Importance',x='Features',tit
 ##Part C
 ```{r}
 # sqrt(test.err[ntree])
-fit$confusion.matrix
+print(fit$confusion.matrix)
 ```
 
 

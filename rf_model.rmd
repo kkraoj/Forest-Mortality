@@ -18,12 +18,11 @@ library(ggplot2)
 ```{r}
 data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 set.seed(10)
-train.fraction=0.7
-FAM.threshold=0.2
+train.fraction=0.55
+FAM.threshold=0.15
 FAM.cutoff=0.00
 ```
 ```{r}
-data=data[data$FAM>FAM.cutoff,]
 data.high=data[data$FAM>FAM.threshold,]
 data.low=data[data$FAM<=FAM.threshold,]
 train.high.ind=sample(1:nrow(data.high),size = train.fraction*dim(data.high)[1])
@@ -83,13 +82,14 @@ g+geom_col(fill='dodgerblue3')+
 
 ##Part C
 ```{r}
-sqrt(test.err[ntree])
-fit$r.squared #training r squared
+# sqrt(test.err[ntree])
+# fit$r.squared #training r squared
 SS.total      <- sum((testY - mean(train.data$FAM))^2)
 SS.residual   <- sum((testY - pred$predictions)^2)
 SS.regression <- sum((pred$predictions - mean(train.data$FAM))^2)
 test.rsq <- 1 - SS.residual/SS.total
-print(test.rsq)
+sprintf('R-squared = %0.2f',test.rsq)
+
 ```
 
 
@@ -135,29 +135,109 @@ p3=ggplot(data=test.data, aes(x=elevation_std, y=FAM, group=1)) +
 grid.arrange(p1,p2,p3,ncol=3)
 ```
 
+```{r}
+TitleMargins = function(plot, Tmargin = unit(0, "mm"), Bmargin = unit(0, "mm")) { 
+ library(gtable)
+ library(grid)
+
+ # Get the plot grob
+ g = ggplotGrob(plot)
+
+ # Get the legend
+ index = which(g$layout$name == "guide-box")
+ leg = g$grobs[[index]][[1]][[1]]
+
+ # Get the legend title 
+ title = leg$grobs[[4]]
+
+ # Set up the heights: for the two margins and the original title
+ heights <- unit.c(Tmargin, unit(1, "grobheight", title), Bmargin)
+
+ # Set up a column of three viewports
+ vp <- viewport(layout = grid.layout(3, 1,
+                   heights = heights), name = "vp1")
+
+ # The middle row, where the title text will appear, is named as 'child_vp'.
+ child_vp <- viewport(layout.pos.row = 2, clip = "off", name = "child_vp")
+
+ # Put the title into a gTree containing one grob (the title) and the three viewports
+ TitleText <- gTree(children = gList(title),
+                   vp = vpTree(vp, vpList(child_vp)))
+
+ # Back to the legend: Set height for row 2 of legend to new height of TitleText
+ leg$heights[2] = sum(heights)
+
+ # Add the new TitleText grob to row 2 of legend
+ leg <- gtable_add_grob(leg, TitleText, 
+               t = 2, l = 2, r = 5, name = "TitleText")
+
+ # Remove the original title
+ leg$grobs <- leg$grobs[-4]
+ leg$layout <- leg$layout[-4, ]
+
+ # Put the legend back into the plot
+ g$grobs[[index]][[1]][[1]] = leg
+
+ class(g) =  c("TitleMargins", class(g))
+
+ g
+
+ }
+# A print method for the plot
+print.TitleMargins <- function(x) {
+   grid.newpage()
+   grid.draw(x)
+}
+
+```
+
 ```{r, fig.width = 5, fig.height = 4}
 library(dplyr)
-ggplot(data=test.data %>% arrange(RWC), aes(x=FAM, y=predicted_FAM, group=1)) +
-  geom_point(aes(color=RWC),shape=19,size=2)+theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))+
-  labs(title='Model Performance')+
-  # theme(legend.position="none")+
-  coord_fixed(ratio = 1, xlim = c(0,0.4), ylim = c(0,0.4), expand = TRUE)
+journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=13))
+p<-ggplot(data=test.data %>% arrange(RWC), aes(x=FAM, y=predicted_FAM, group=1)) +
+  geom_point(aes(color=RWC),shape=19,size=2)+journal_theme+
+  geom_segment(aes(x = 0, y = 0, xend = .4, yend = .4),color='darkgrey',size=0.8)+
+  labs(title='Ensemble model performance',x='Observed fractional \narea of mortlality',y='Predicted fractional \narea of mortality',color='Relative\nwater content')+
+  coord_fixed(ratio = 1, xlim = c(0,0.4), ylim = c(0,0.4), expand = TRUE)+
+  annotate('text',x=0.35,y=0.40,label=paste('1:1 line'),size=3.5)
+Tmargin = unit(0, "mm")
+Bmargin = unit(3, "mm")
+TitleMargins(p, Tmargin, Bmargin)
 ```
+
 ```{r, fig.width = 5, fig.height = 4}
-bias.model=mean(bias(test.data$predicted_FAM,test.data$FAM,relative=TRUE))
-print(bias.model)
+library(SimDesign)
+test.data.subset=test.data[test.data$FAM>FAM.cutoff,]
+bias.model=mean(bias(test.data.subset$predicted_FAM,test.data.subset$FAM,relative=TRUE))
+sprintf('R-squared = %0.2f',test.rsq)
+sprintf('Relative Bias = %0.2f',bias.model)
 
 ```
 ```{r, fig.width = 5, fig.height = 4}
 size=10
-par=1:size
-est=par+runif(size,-1,1)
+par=seq(1,size,1)
+est=1.5*par+runif(size,-1,1)
 bias=mean(bias(est,par,relative=TRUE))
-print(bias.model)
+print(bias)
+par(pty='s')
+plot(par,est,xlim=c(0,size),ylim=c(0,size))
 
 ```
 
+```{r, fig.width = 5, fig.height = 4}
+size=10
+par=seq(1,size,1)
+est=1.5*par+runif(size,-1,1)
+bias=mean(bias(est,par,relative=TRUE))
+print(bias)
+par(pty='s')
+plot(par,est,xlim=c(0,size),ylim=c(0,size))
 
+```
+```{r}
+data['predicted_FAM']=predict(fit,data[-c(1)])$predictions
+write.csv(data, file = "D:/Krishna/Project/data/rf_predicted.csv")
+```
 
 
 

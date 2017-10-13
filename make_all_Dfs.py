@@ -147,4 +147,11 @@ for field in ['tmax']:
         df.index=pd.to_datetime(df.index,format='%Y')
         df.index.name='%s_%s'%(field,season)
         store[df.index.name]=df             
-           
+
+###----------------------------------------------------------------------------
+df=pd.read_csv('D:/Krishna/Project/data/rf_predicted.csv',index_col=0)
+df=df['predicted_FAM']
+df=pd.DataFrame(df.values.reshape(len(df)/370,370),columns=range(370))
+df.index=pd.to_datetime(df.index+2009,format='%Y')
+df.index.name='predicted_FAM'
+store[df.index.name]=df

@@ -16,8 +16,6 @@ from sklearn import tree
 def rf_assemble(year_range,*dfs):
     if len(dfs)==1:
         dfs=[dfs]
-#    df=store['cwd']
-#    dfs[0]=df
     out=pd.DataFrame(index=range(dfs[0].shape[1]*(year_range[-1]-year_range[0]+1)))
     for df in dfs:                    
         df=df[(df.index.year>=year_range[0]) &\
@@ -26,9 +24,15 @@ def rf_assemble(year_range,*dfs):
         out[array.name]=array
     return(out)
 
-def rf_fill(df):
-    df.fillna(method='ffill',inplace=True)
+def rf_fill_nan(df):
     df.fillna(method='bfill',inplace=True)
+    df.fillna(method='ffill',inplace=True)
+
+    return df
+
+def rf_remove_nan(df):
+    df.dropna(inplace=True)
+    df.index=range(df.shape[0])
     return df
 
 input_sources=['mortality_025_grid','BPH_025_grid','LAI_025_grid_sum',\
@@ -57,28 +61,29 @@ Df.loc[Df['missing_data']>=1,'missing_data']='yes'
 #Df.loc[Df['missing_data']==1,'missing_data']='yes'
 Df.loc[Df['missing_data']==0,'missing_data']='no'
 #-----------------------------------------------------------------------------
-Null=Df[['RWC','cwd','vsm_sum','vsm_win']]
-Null=Null.isnull()
-Null.replace(True,np.nan,inplace=True)
-for column in Null.columns:
-    Null[column].replace(0.0,Null.columns.get_loc(column),inplace=True)
-Null['union']=Null.notnull().T.sum()
-Null.union[Null.overall!=4]=np.nan
-Null.union[Null.overall==4]=4
-fig,ax=plt.subplots(figsize=(6,3))
-Null.plot(linestyle='',marker='|',mew='0.1',markersize=10,ax=ax,legend=False,color='darkblue')
-#plt.tick_params(axis='y', which='major', labelsize=7)
-#ax.set_xlabel('Fraction of Nulls')
-ax.set_ylabel('Features')
-ax.set_title('Data Availability')
-plt.yticks(range(len(Null.columns)),Null.columns)
-labels=range(2009,2016)
-plt.xticks(np.linspace(0,len(Null.index),len(labels),endpoint=False),labels)
-
-
-Null.overall.replace(False,np.nan,inplace=True)
-Null_frac=(Null.missing_data==0).astype(int).mean()
-print('Union of Nulls = %0.2f'%Null_frac)
+#Null=Df[['RWC','cwd','vsm_sum','vsm_win']]
+#Null=Null.isnull()
+#Null.replace(True,np.nan,inplace=True)
+#for column in Null.columns:
+#    Null[column].replace(0.0,Null.columns.get_loc(column),inplace=True)
+#Null['intersection']=Null.notnull().T.sum()
+#Null.intersection[Null.intersection!=4]=np.nan
+#Null.intersection[Null.intersection==4]=4
+#fig,ax=plt.subplots(figsize=(6,3))
+#Null.plot(linestyle='',marker='|',mew='0.1',markersize=10,ax=ax,legend=False,color='darkblue')
+##plt.tick_params(axis='y', which='major', labelsize=7)
+##ax.set_xlabel('Fraction of Nulls')
+#ax.set_ylabel('Features')
+#ax.set_title('Data Availability')
+#plt.yticks(range(len(Null.columns)),Null.columns)
+#labels=range(2009,2016)
+#plt.xticks(np.linspace(0,len(Null.index),len(labels),endpoint=False),labels)
+#
+#
+#Null.intersection.replace(False,np.nan,inplace=True)
+#Null_frac=(Null.intersection==0).astype(int).mean()
+#print('intersection of Nulls = %0.2f'%Null_frac)
 #-----------------------------------------------------------------------------
-#Df=rf_fill(Df)
-#Df.to_csv('D:/Krishna/Project/data/rf_data.csv')
+#Df=rf_fill_nan(Df)
+Df=rf_remove_nan(Df)
+Df.to_csv('D:/Krishna/Project/data/rf_data.csv')

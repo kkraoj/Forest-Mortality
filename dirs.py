@@ -128,7 +128,8 @@ def min_anomaly(Df):
 
   
 
-def clean_xy(x,y,rep_times,thresh):
+def clean_xy(x,y,rep_times=1,thresh=0.0):
+    from scipy.stats import gaussian_kde
     # for testing ONLY
 #    x=data_anomaly.values.flatten()
 #    y=np.log10(mort.values.flatten())

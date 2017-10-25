@@ -19,8 +19,8 @@ library(ggplot2)
 data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 # data=subset(data,select=-c(RWC))
 set.seed(10)
-train.fraction=0.7
-FAM.threshold=0.1☺
+train.fraction=0.55
+FAM.threshold=0.15
 FAM.cutoff=0.00
 ```
 ```{r}
@@ -123,7 +123,7 @@ bias.model=mean(bias(test.data.subset$predicted_FAM,test.data.subset$FAM,relativ
 # sprintf('R-squared = %0.2f',test.rsq)
 # sprintf('Relative Bias = %0.2f',bias.model)
 journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=13))
-p<-ggplot(data=test.data %>% arrange(RWC), aes(x=FAM, y=predicted_FAM, group=1)) +
+p<-ggplot(data=test.data , aes(x=FAM, y=predicted_FAM, group=1)) +
   geom_point(aes(color=RWC),shape=19,size=2)+journal_theme+
   geom_segment(aes(x = 0, y = 0, xend = .4, yend = .4),color='darkgrey',size=0.8)+
   labs(title='Ensemble model performance',x='Observed fractional \narea of mortlality',y='Predicted fractional \narea of mortality',color='Relative\nwater content')+

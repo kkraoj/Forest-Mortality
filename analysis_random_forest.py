@@ -5,6 +5,7 @@ Created on Tue Sep 26 18:32:07 2017
 @author: kkrao
 """
 import os
+import subprocess
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,7 +33,7 @@ def rf_fill_nan(df):
 
 def rf_remove_nan(df):
     df.dropna(inplace=True)
-    df.index=range(df.shape[0])
+#    df.index=range(df.shape[0])
     return df
 
 input_sources=['mortality_025_grid','BPH_025_grid','LAI_025_grid_sum',\
@@ -60,7 +61,11 @@ Df['missing_data']=Df.T.isnull().sum()
 Df.loc[Df['missing_data']>=1,'missing_data']='yes'
 #Df.loc[Df['missing_data']==1,'missing_data']='yes'
 Df.loc[Df['missing_data']==0,'missing_data']='no'
-#-----------------------------------------------------------------------------
+#Df=rf_remove_nan(Df)
+#Df.to_csv('D:/Krishna/Project/data/rf_data.csv')
+
+#subprocess.call("/usr/bin/Rscript --vanilla /D:/Krishna/Project/codes/rf_model.rmd", shell=True)
+#Null analysis-----------------------------------------------------------------
 #Null=Df[['RWC','cwd','vsm_sum','vsm_win']]
 #Null=Null.isnull()
 #Null.replace(True,np.nan,inplace=True)
@@ -85,5 +90,6 @@ Df.loc[Df['missing_data']==0,'missing_data']='no'
 #print('intersection of Nulls = %0.2f'%Null_frac)
 #-----------------------------------------------------------------------------
 #Df=rf_fill_nan(Df)
-Df=rf_remove_nan(Df)
-Df.to_csv('D:/Krishna/Project/data/rf_data.csv')
+Df['valid_RWC_no_vsm']=0
+Df.loc[(Df.RWC.notnull() & (Df.vsm_sum.isnull() | Df.vsm_win.isnull())),'valid_RWC_no_vsm' ]  = 1
+Df['valid_RWC_no_vsm'].sum()/Df.shape[0]*100

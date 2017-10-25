@@ -151,7 +151,9 @@ for field in ['tmax']:
 ###----------------------------------------------------------------------------
 df=pd.read_csv('D:/Krishna/Project/data/rf_predicted.csv',index_col=0)
 df=df['predicted_FAM']
-df=pd.DataFrame(df.values.reshape(len(df)/370,370),columns=range(370))
+df=df.reindex(range(370*7))
+df=pd.DataFrame(df.values.reshape((len(df)/370,370),order='F'),columns=range(370))
+#order ='F' is very important. 
 df.index=pd.to_datetime(df.index+2009,format='%Y')
 df.index.name='predicted_FAM'
 store[df.index.name]=df

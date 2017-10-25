@@ -18,7 +18,7 @@ library(ggplot2)
 ```{r}
 data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 set.seed(10)
-train.fraction=0.55
+train.fraction=0.7
 FAM.threshold=0.15
 FAM.cutoff=0.00
 ```
@@ -73,11 +73,12 @@ importance=cbind(importance.mean,importance.sd)
 importance=importance[order(-importance$mean),]
   
 g=ggplot(importance,aes(x=reorder(row.names(importance),importance$mean),y=mean))
-g+geom_col(fill='dodgerblue3')+
+g+geom_col(fill='darkgrey')+
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
   coord_flip()+
   labs(y='Importance',x='Features',title='Feature importance chart')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
+write.csv(importance, file = "D:/Krishna/Project/data/rf_importance.csv")
 ```
 
 ##Part C
@@ -109,10 +110,10 @@ p1=ggplot(data=test.data, aes(x=RWC, y=FAM, group=1)) +
   geom_point(aes(color=density))+theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))+
   theme(legend.position="none")+
   labs(title='')+
-  # coord_fixed(ratio = 2)+
+  coord_fixed(ratio = 2)+
   geom_line(color='brown1',aes(x=RWC,y=predicted_FAM))+
   geom_ribbon(aes(ymin=ifelse(predicted_FAM-pred$se < 0, 0, predicted_FAM-pred$se)
-                    ,ymax=predicted_FAM+pred$se,x=RWC,fill='band'),alpha=0.3)
+    ,ymax=predicted_FAM+pred$se,x=RWC,fill='band'),alpha=0.3)
 test.data$density <- get_density(test.data$EVP_win, test.data$FAM)
 p2=ggplot(data=test.data, aes(x=EVP_win, y=FAM, group=1)) +
   geom_point(aes(color=density))+labs(title='Model Predictions',y='',yticks='')+
@@ -190,19 +191,60 @@ print.TitleMargins <- function(x) {
 }
 
 ```
+```{r}
+library(grid) 
 
-```{r, fig.width = 5, fig.height = 4}
+# Create a function with three arguments 
+# p : pre-defined plot 
+# legend_size : legend size, expressed as percentage of window width 
+# legend_text_size : font size in points 
+
+ggplot_size_legend <- function(p, legend_size=0.1, legend_text_size=10) 
+{ 
+  Layout <- grid.layout(nrow = 1, 
+                        ncol = 2, 
+                        widths = unit(c(1-legend_size, legend_size), 
+c("null", "null")), 
+                        heights = unit(1, "null")) 
+
+  vplayout <- function(...) { 
+       grid.newpage() 
+       pushViewport(viewport(layout = Layout)) 
+  } 
+
+  subplot <- function(x, y) viewport(layout.pos.row = x, 
+       layout.pos.col = y) 
+
+  #create two plots, one with legend, one without 
+
+  pl <- p + theme(legend.position = "none") 
+  pn <- p + theme_grey(legend_text_size)
+
+  # print the plot 
+
+  vplayout() 
+  print(pl, vp = subplot(1, 1)) 
+  print(pn, vp = subplot(1, 2)) 
+} 
+```
+
+
+```{r, fig.width = 3.54330711, fig.height = 3.54330711}
 library(dplyr)
-journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=13))
-p<-ggplot(data=test.data %>% arrange(RWC), aes(x=FAM, y=predicted_FAM, group=1)) +
+journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=9), legend.position=c(0.1,0.5))
+p<-ggplot(data=test.data, aes(x=FAM, y=predicted_FAM, group=1)) +
   geom_point(aes(color=RWC),shape=19,size=2)+journal_theme+
   geom_segment(aes(x = 0, y = 0, xend = .4, yend = .4),color='darkgrey',size=0.8)+
-  labs(title='Ensemble model performance',x='Observed fractional \narea of mortlality',y='Predicted fractional \narea of mortality',color='Relative\nwater content')+
-  coord_fixed(ratio = 1, xlim = c(0,0.4), ylim = c(0,0.4), expand = TRUE)+
-  annotate('text',x=0.35,y=0.40,label=paste('1:1 line'),size=3.5)
+  labs(x='Observed fractional area of mortlality',y='Predicted fractional area of mortality',color='Relative\nwater content')+
+  coord_fixed(ratio = 1, xlim = c(1e-4,0.4), ylim = c(1e-4,0.4), expand = TRUE)+
+  # scale_x_log10()+
+  # scale_y_log10()+
+  annotate('text',x=0.35,y=0.40,label=paste('1:1 line'),size=2)
 Tmargin = unit(0, "mm")
 Bmargin = unit(3, "mm")
 TitleMargins(p, Tmargin, Bmargin)
+# ggplot_size_legend(p, 0.1, 8)
+write.csv(test.data, file = "D:/Krishna/Project/data/rf_test_data.csv")
 ```
 
 ```{r, fig.width = 5, fig.height = 4}
@@ -213,32 +255,21 @@ sprintf('R-squared = %0.2f',test.rsq)
 sprintf('Relative Bias = %0.2f',bias.model)
 
 ```
-```{r, fig.width = 5, fig.height = 4}
-size=10
-par=seq(1,size,1)
-est=1.5*par+runif(size,-1,1)
-bias=mean(bias(est,par,relative=TRUE))
-print(bias)
-par(pty='s')
-plot(par,est,xlim=c(0,size),ylim=c(0,size))
 
-```
-
-```{r, fig.width = 5, fig.height = 4}
-size=10
-par=seq(1,size,1)
-est=1.5*par+runif(size,-1,1)
-bias=mean(bias(est,par,relative=TRUE))
-print(bias)
-par(pty='s')
-plot(par,est,xlim=c(0,size),ylim=c(0,size))
-
-```
 ```{r}
 data['predicted_FAM']=predict(fit,data[-c(1)])$predictions
 write.csv(data, file = "D:/Krishna/Project/data/rf_predicted.csv")
 ```
 
+```{r, fig.width = 5, fig.height = 4}
+# size=10
+# par=seq(1,size,1)
+# est=1.5*par+runif(size,-1,1)
+# bias=mean(bias(est,par,relative=TRUE))
+# print(bias)
+# par(pty='s')
+# plot(par,est,xlim=c(0,size),ylim=c(0,size))
+```
 
 
 

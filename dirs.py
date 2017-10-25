@@ -8,7 +8,7 @@ Created on Wed May 10 14:50:05 2017
 from __future__ import division
 #from IPython import get_ipython
 #get_ipython().magic('reset -sf') 
-
+import plotsettings
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -45,6 +45,8 @@ from matplotlib import ticker
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR
 from IPython.display import display, HTML
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+from matplotlib_scalebar.scalebar import ScaleBar
 
     
 MyDir = 'D:/Krishna/Project/data/RS_data'  #Type the path to your data
@@ -231,19 +233,13 @@ def mean_anomaly(Df): #mean of anomaly
     return Df_anomaly
 
 
-def RWC(Df):
-    out=(Df.groupby(Df.index.year).quantile(0.5)-Df.quantile(0.05))/\
-        (Df.quantile(0.95)-Df.quantile(0.05))
-    out[(out>1.0)]=1
-    out[(out<0.0)]=0        
-    out.index=pd.to_datetime(out.index,format='%Y')
-    return out
-
-def RWC_detail(Df,upper_quantile):
+def RWC(Df,upper_quantile=0.95,start_month=7, months_window=3,start_year=2009):
+    Df=Df[Df.index.year>=start_year]
+    Df=Df.loc[(Df.index.month>=start_month) & (Df.index.month<start_month+months_window)]
     out=(Df.groupby(Df.index.year).quantile(0.5)-Df.quantile(1-upper_quantile))/\
         (Df.quantile(upper_quantile)-Df.quantile(1-upper_quantile))
     out[(out>1.0)]=np.nan
-    out[(out<0.0)]=np.nan        
+    out[(out<0.0)]=np.nan   
     out.index=pd.to_datetime(out.index,format='%Y')
     return out
 
@@ -271,3 +267,25 @@ def min_div_max(Df):
 def cwd_accumulate(df,start_year,end_year):
     df=df.loc[(df.index.year<=end_year) & (df.index.year>=start_year)]
     return df.sum()
+
+def append_prediction(name='rf_predicted'):
+    store=pd.HDFStore('data.h5')
+    df=pd.read_csv('D:/Krishna/Project/data/%s.csv'%name,index_col=0)
+    df=df['predicted_FAM']
+    df=df.reindex(range(370*7))
+    df=pd.DataFrame(df.values.reshape((int(len(df)/370),370),order='F'),columns=range(370))
+    df.index=pd.to_datetime(df.index+2009,format='%Y')
+    df.index.name='predicted_FAM'
+    store[df.index.name]=df
+         
+def import_mort_leaf_habit(species,grid_size=25,start_year=2009,end_year=2015):
+    import os
+    import pandas as pd
+    from dirs import Dir_CA
+    os.chdir(Dir_CA)
+    store=pd.HDFStore('data.h5')
+    mort=store['mortality_%s_%03d_grid'%(species,grid_size)]
+    mort=mort[mort>0]
+    mort=mort[(mort.index.year>=start_year) &\
+          (mort.index.year<=end_year)]
+    return mort

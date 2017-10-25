@@ -1,16 +1,23 @@
-import urllib
-from dirs import*
-from netCDF4 import Dataset
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct 18 19:25:52 2017
 
-os.chdir(MyDir+'/PET')
-data=['sph','pr','tmmn','tmmx','pdsi','pet']
-year_range=range(2005,2017)
-my_example_nc_file = './'+data[5]+'/'+data[5]+'_'+'%d'%year_range[0]+'.nc'
-fh = Dataset(my_example_nc_file, mode='r')
+@author: kkrao
+"""
 
-#lons = fh.variables['lon'][:]
-#lats = fh.variables['lat'][:]
-#tmax = fh.variables[data[5]][:]
-                         
+df=store['vod_005_grid']
+df=RWC(df,0.95)
+df.index.name='RWC_005_grid'
+store[df.index.name]=df
+timeseries_maps(grid_size=5, var2='RWC_005_grid',end_year=2016,\
+                var2_range=[2e-1,1], var1_range=[1e-5, 1], var2_label='Relatve\nwater content',cmap2='inferno',\
+                title='Timeseries of observed mortality and RWC')
 
-                   
+df=store['vod_pm']
+df=RWC(df,0.95)
+df.index.name='RWC'
+store[df.index.name]=df
+timeseries_maps(grid_size=25, var2='RWC',end_year=2015,\
+                var2_range=[1e-5,1], var1_range=[1e-5, 0.4], var2_label='Relatve\nwater content',cmap2='inferno',\
+                title='Timeseries of observed mortality and RWC')
+timeseries_maps()

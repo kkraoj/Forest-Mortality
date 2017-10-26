@@ -20,7 +20,7 @@ data=read.csv('D:/Krishna/Project/data/rf_data.csv',row.names=1)
 set.seed(10)
 FAM.cutoff=0.00
 max.iter=10
-imp.frame=data.frame(row.names=1:27)
+imp.frame=data.frame(row.names=1:(dim(data)[2]-1))
 counter=0
 for (train.fraction in seq(0.3,0.8,0.1))
 {
@@ -77,6 +77,7 @@ g+geom_col(fill='dodgerblue3')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
 write.csv(importance, file = "D:/Krishna/Project/data/rf_sensitivity_importance.csv")
 ```
+
 ```{r}
 rank = colnames(t(imp.frame))[max.col(t(imp.frame),ties.method="first")]
 rank=table(rank)
@@ -88,5 +89,5 @@ g+geom_col(fill='dodgerblue3')+
   coord_flip()+
   labs(x='Features',y='Fraction of experiments feature is most important',title='Top most ranked features')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
-write.csv(rank, file = "D:/Krishna/Project/data/rf_sensitivity_rank.csv")
+# write.csv(rank, file = "D:/Krishna/Project/data/rf_sensitivity_rank.csv")
 ```

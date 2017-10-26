@@ -21,7 +21,15 @@ set.seed(10)
 train.fraction=0.7
 FAM.threshold=0.15
 FAM.cutoff=0.00
+write.files=TRUE
 ```
+
+```{r}
+####experimenting. please delete for final model
+# drops=c('EVP_sum','EVP_win','PEVAP_sum','PEVAP_win')
+# data=data[ , !(names(data) %in% drops)]
+```
+
 ```{r}
 data.high=data[data$FAM>FAM.threshold,]
 data.low=data[data$FAM<=FAM.threshold,]
@@ -36,6 +44,10 @@ ntree=50
 test.err=double(ntree)
 test.err.low=double(ntree)
 test.err.high=double(ntree)
+```
+
+```{r}
+## printing test error for number of trees as a check of stabilization
 # for(i in 1:ntree)
 # {
 #   fit=ranger(FAM~.,data=train.data,num.trees=i,importance="impurity",seed=11,keep.inbag=TRUE)
@@ -52,10 +64,9 @@ test.err.high=double(ntree)
 
 ```
 
-##Part B
 ```{r}
 max.iter=10
-imp.frame=data.frame(row.names=1:27)
+imp.frame=data.frame(row.names=1:(dim(train.data)[2]-1))
 for (i in 1:max.iter)
 {
   fit=ranger(FAM~.,data=train.data,importance="impurity",seed=i,keep.inbag=TRUE)
@@ -78,7 +89,6 @@ g+geom_col(fill='darkgrey')+
   coord_flip()+
   labs(y='Importance',x='Features',title='Feature importance chart')+
   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
-write.csv(importance, file = "D:/Krishna/Project/data/rf_importance.csv")
 ```
 
 ##Part C
@@ -90,7 +100,6 @@ SS.residual   <- sum((testY - pred$predictions)^2)
 SS.regression <- sum((pred$predictions - mean(train.data$FAM))^2)
 test.rsq <- 1 - SS.residual/SS.total
 sprintf('R-squared = %0.2f',test.rsq)
-
 ```
 
 
@@ -136,115 +145,17 @@ p3=ggplot(data=test.data, aes(x=elevation_std, y=FAM, group=1)) +
 grid.arrange(p1,p2,p3,ncol=3)
 ```
 
-```{r}
-TitleMargins = function(plot, Tmargin = unit(0, "mm"), Bmargin = unit(0, "mm")) { 
- library(gtable)
- library(grid)
-
- # Get the plot grob
- g = ggplotGrob(plot)
-
- # Get the legend
- index = which(g$layout$name == "guide-box")
- leg = g$grobs[[index]][[1]][[1]]
-
- # Get the legend title 
- title = leg$grobs[[4]]
-
- # Set up the heights: for the two margins and the original title
- heights <- unit.c(Tmargin, unit(1, "grobheight", title), Bmargin)
-
- # Set up a column of three viewports
- vp <- viewport(layout = grid.layout(3, 1,
-                   heights = heights), name = "vp1")
-
- # The middle row, where the title text will appear, is named as 'child_vp'.
- child_vp <- viewport(layout.pos.row = 2, clip = "off", name = "child_vp")
-
- # Put the title into a gTree containing one grob (the title) and the three viewports
- TitleText <- gTree(children = gList(title),
-                   vp = vpTree(vp, vpList(child_vp)))
-
- # Back to the legend: Set height for row 2 of legend to new height of TitleText
- leg$heights[2] = sum(heights)
-
- # Add the new TitleText grob to row 2 of legend
- leg <- gtable_add_grob(leg, TitleText, 
-               t = 2, l = 2, r = 5, name = "TitleText")
-
- # Remove the original title
- leg$grobs <- leg$grobs[-4]
- leg$layout <- leg$layout[-4, ]
-
- # Put the legend back into the plot
- g$grobs[[index]][[1]][[1]] = leg
-
- class(g) =  c("TitleMargins", class(g))
-
- g
-
- }
-# A print method for the plot
-print.TitleMargins <- function(x) {
-   grid.newpage()
-   grid.draw(x)
-}
-
-```
-```{r}
-library(grid) 
-
-# Create a function with three arguments 
-# p : pre-defined plot 
-# legend_size : legend size, expressed as percentage of window width 
-# legend_text_size : font size in points 
-
-ggplot_size_legend <- function(p, legend_size=0.1, legend_text_size=10) 
-{ 
-  Layout <- grid.layout(nrow = 1, 
-                        ncol = 2, 
-                        widths = unit(c(1-legend_size, legend_size), 
-c("null", "null")), 
-                        heights = unit(1, "null")) 
-
-  vplayout <- function(...) { 
-       grid.newpage() 
-       pushViewport(viewport(layout = Layout)) 
-  } 
-
-  subplot <- function(x, y) viewport(layout.pos.row = x, 
-       layout.pos.col = y) 
-
-  #create two plots, one with legend, one without 
-
-  pl <- p + theme(legend.position = "none") 
-  pn <- p + theme_grey(legend_text_size)
-
-  # print the plot 
-
-  vplayout() 
-  print(pl, vp = subplot(1, 1)) 
-  print(pn, vp = subplot(1, 2)) 
-} 
-```
-
-
 ```{r, fig.width = 3.54330711, fig.height = 3.54330711}
 library(dplyr)
-journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=9), legend.position=c(0.1,0.5))
-p<-ggplot(data=test.data, aes(x=FAM, y=predicted_FAM, group=1)) +
-  geom_point(aes(color=RWC),shape=19,size=2)+journal_theme+
+journal_theme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=9), legend.position=c(0.2,0.7))
+p<-ggplot(data=test.data, aes(x=FAM, y=predicted_FAM, group=1))
+p+geom_point(aes(color=RWC),shape=19,size=2)+journal_theme+
   geom_segment(aes(x = 0, y = 0, xend = .4, yend = .4),color='darkgrey',size=0.8)+
   labs(x='Observed fractional area of mortlality',y='Predicted fractional area of mortality',color='Relative\nwater content')+
   coord_fixed(ratio = 1, xlim = c(1e-4,0.4), ylim = c(1e-4,0.4), expand = TRUE)+
   # scale_x_log10()+
   # scale_y_log10()+
   annotate('text',x=0.35,y=0.40,label=paste('1:1 line'),size=2)
-Tmargin = unit(0, "mm")
-Bmargin = unit(3, "mm")
-TitleMargins(p, Tmargin, Bmargin)
-# ggplot_size_legend(p, 0.1, 8)
-write.csv(test.data, file = "D:/Krishna/Project/data/rf_test_data.csv")
 ```
 
 ```{r, fig.width = 5, fig.height = 4}
@@ -258,7 +169,6 @@ sprintf('Relative Bias = %0.2f',bias.model)
 
 ```{r}
 data['predicted_FAM']=predict(fit,data[-c(1)])$predictions
-write.csv(data, file = "D:/Krishna/Project/data/rf_predicted.csv")
 ```
 
 ```{r, fig.width = 5, fig.height = 4}
@@ -271,6 +181,14 @@ write.csv(data, file = "D:/Krishna/Project/data/rf_predicted.csv")
 # plot(par,est,xlim=c(0,size),ylim=c(0,size))
 ```
 
+```{r}
+if (write.files)
+  {
+  write.csv(data, file = "D:/Krishna/Project/data/rf_predicted.csv")
+  write.csv(importance, file = "D:/Krishna/Project/data/rf_importance.csv")
+  write.csv(test.data, file = "D:/Krishna/Project/data/rf_test_data.csv")
+  }
+```
 
 
 

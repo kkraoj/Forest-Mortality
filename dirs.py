@@ -269,6 +269,7 @@ def cwd_accumulate(df,start_year,end_year):
     return df.sum()
 
 def append_prediction(name='rf_predicted'):
+    os.chdir(Dir_CA)
     store=pd.HDFStore('data.h5')
     df=pd.read_csv('D:/Krishna/Project/data/%s.csv'%name,index_col=0)
     df=df['predicted_FAM']
@@ -277,6 +278,7 @@ def append_prediction(name='rf_predicted'):
     df.index=pd.to_datetime(df.index+2009,format='%Y')
     df.index.name='predicted_FAM'
     store[df.index.name]=df
+    return df
          
 def import_mort_leaf_habit(species,grid_size=25,start_year=2009,end_year=2015):
     import os

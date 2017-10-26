@@ -57,11 +57,11 @@ inputs=range(len(input_sources))
 for i in range(len(input_sources)):
     inputs[i]=store[input_sources[i]]
 Df=rf_assemble(year_range,*inputs)
-Df['missing_data']=Df.T.isnull().sum()
-Df.loc[Df['missing_data']>=1,'missing_data']='yes'
+#Df['missing_data']=Df.T.isnull().sum()
+#Df.loc[Df['missing_data']>=1,'missing_data']='yes'
 #Df.loc[Df['missing_data']==1,'missing_data']='yes'
-Df.loc[Df['missing_data']==0,'missing_data']='no'
-#Df=rf_remove_nan(Df)
+#Df.loc[Df['missing_data']==0,'missing_data']='no'
+Df=rf_remove_nan(Df)
 #Df.to_csv('D:/Krishna/Project/data/rf_data.csv')
 
 #subprocess.call("/usr/bin/Rscript --vanilla /D:/Krishna/Project/codes/rf_model.rmd", shell=True)
@@ -90,6 +90,6 @@ Df.loc[Df['missing_data']==0,'missing_data']='no'
 #print('intersection of Nulls = %0.2f'%Null_frac)
 #-----------------------------------------------------------------------------
 #Df=rf_fill_nan(Df)
-Df['valid_RWC_no_vsm']=0
-Df.loc[(Df.RWC.notnull() & (Df.vsm_sum.isnull() | Df.vsm_win.isnull())),'valid_RWC_no_vsm' ]  = 1
-Df['valid_RWC_no_vsm'].sum()/Df.shape[0]*100
+#Df['valid_RWC_no_vsm']=0
+#Df.loc[(Df.RWC.notnull() & (Df.vsm_sum.isnull() | Df.vsm_win.isnull())),'valid_RWC_no_vsm' ]  = 1
+#Df['valid_RWC_no_vsm'].sum()/Df.shape[0]*100

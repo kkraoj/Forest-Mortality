@@ -40,7 +40,7 @@ def plot_timeseries_maps(var1='mortality_%03d_grid', var1_range=[1e-5, 0.4],\
 #    mort=mort[mort>0]
     mort=mort[(mort.index.year>=start_year) &\
               (mort.index.year<=end_year)]
-    pred_mort=store[var2]
+    pred_mort=append_prediction()
     year_range=mort.index.year
     cols=mort.shape[0]
     zoom=1.1
@@ -270,9 +270,8 @@ def plot_pdf(data_source1='vod_pm',data_source2='RWC',data_source3='cwd',\
     publishable = plotsettings.Set(journal)
     sns.set_style("ticks")
     os.chdir(Dir_CA)
-    store=pd.HDFStore('data.h5')
     Df=pd.read_csv('D:/Krishna/Project/data/rf_data.csv',index_col=0)
-    input_sources=['FAM','live_tree_density','LAI_sum',\
+    input_sources=['FAM','live_basal_area','LAI_sum',\
     'RWC', 'aspect_mean', 'canopy_height',\
      'cwd','elevation_mean',\
      'forest_cover','ppt_sum','tmax_sum',\
@@ -280,7 +279,7 @@ def plot_pdf(data_source1='vod_pm',data_source2='RWC',data_source3='cwd',\
     'PEVAP_sum','vsm_sum']
     Df=Df.loc[:,Df.columns.isin(input_sources)]
     ordered_sources=((Df.quantile(0.75)-Df.quantile(0.25))/Df.max()).sort_values(ascending=False).index
-    publishable.set_figsize(1, len(input_sources)/8, aspect_ratio =1)
+    publishable.set_figsize(1, len(input_sources)/14, aspect_ratio =1)
     sns.set_style('ticks')
     fig, axs = plt.subplots(len(input_sources),1)
     i=0
@@ -304,23 +303,22 @@ def plot_regression(var1='FAM', var1_range=[-0.02, 0.42],\
                     grid_size=25,cmap='plasma', start_year=2009,\
                     end_year = 2015,ticks=5,\
                     title='Regression of observed and predicted mortality',proj='cyl',\
-                    journal='GlobEnvChange'):
+                    journal='GlobEnvChange',dataset='test_data'):
     publishable = plotsettings.Set(journal)
     os.chdir(Dir_CA)
-    Df=pd.read_csv('D:/Krishna/Project/data/rf_test_data.csv',index_col=0)   
+    Df=pd.read_csv('D:/Krishna/Project/data/rf_%s.csv'%dataset,index_col=0)   
     publishable.set_figsize(1, 1, aspect_ratio =1)
     sns.set_style('ticks')
     
     fig, ax = plt.subplots(1,1)
     z=Df['RWC']
     plot=ax.scatter(Df[var1],Df[var2],marker='s',c=z,cmap=cmap)
-    ax.axis('equal')
     ax.set_xlim(var1_range)
     ax.set_ylim(var2_range)
     ax.set_xlabel(var1_label)
     ax.set_ylabel(var2_label)
     ax.plot(var1_range,var2_range,color='grey',lw=0.6)
-    cbaxes = fig.add_axes([0.2, 0.65, 0.03, 0.1])
+    cbaxes = fig.add_axes([0.2, 0.60, 0.03, 0.1])
     cb=fig.colorbar(plot,ax=ax,\
                     ticks=[min(z)+0.1*max(z), 0.9*max(z)],cax=cbaxes)
     cb.ax.set_yticklabels(['Low', 'High'])
@@ -464,11 +462,16 @@ def plot_PET_AET(data_source1='vod_pm',data_source2='RWC',data_source3='cwd',\
     ax.annotate('CWD', xy=(0.67, 0.38), xycoords='axes fraction',\
                 ha='right',va='top',color='darkgreen',fontweight='bold')
     
+def idxquantile(s, q=0.5, *args, **kwargs):
+    qv = s.quantile(q, *args, **kwargs)
+    return (s.sort_values()[::-1] <= qv).idxmax()
+
 def plot_RWC_definition(data_source1='vod_pm',data_source2='RWC',\
                             data_label1='VOD',\
                             data_label2='Relative\nwater content',\
                             start_year=2009,end_year = 2015,\
-                            start_month=7,months_window=3,journal='GlobEnvChange',alpha=0.4):
+                            start_month=7,months_window=3,journal='GlobEnvChange'\
+                            ,alpha1=0.2,color='#BD2031',alpha2=0.7):
     publishable = plotsettings.Set(journal)
     sns.set_style("ticks")
     os.chdir(Dir_CA)
@@ -479,20 +482,42 @@ def plot_RWC_definition(data_source1='vod_pm',data_source2='RWC',\
     data=data.rolling(30,min_periods=1).mean()
     publishable.set_figsize(1, 0.3, aspect_ratio =1)
     sns.set_style('ticks')
-    fig, axs = plt.subplots(1,1,sharex=True)
-    plt.subplots_adjust(hspace=0.23)
-    ax=axs
-    ax.grid(axis='x')
+    fig, ax = plt.subplots(1,1,sharex=True)
+#    ax.grid(axis='x')
     ax.set_ylabel(data_label1)
-    ax.plot(data.loc[:,299],'-',color='k',lw=1)  
-    ax.fill_between(data.index,data.loc[:,299],data.loc[:,299]\
-    ,alpha=0,color='midnightblue') ## dummy for making alpha work in axvspan
+    data=data.loc[:,104]
+    ax.plot(data,'-',color='k',lw=1)  
     for year in np.unique(data.index.year):
-        ax.axvspan(*pd.to_datetime(['%d-07-01'%year,'%d-09-30'%year]), alpha=alpha, facecolor='tomato')
-      
+        ax.axvspan(*pd.to_datetime(['%d-07-01'%year,'%d-09-30'%year]), alpha=alpha1, facecolor=color)
+    mask=(data.index.month>=start_month) & (data.index.month<start_month+months_window)
+    data[~mask]=np.nan
+    u,l=data.quantile(0.95),data.quantile(0.05)
+#    ax.axhline(u,xmin=0.07,ls='--',color=color,lw=1,dashes=(3.45, 10.7))  
+#    ax.axhline(l,xmin=0.07,ls='--',color=color,lw=1,dashes=(3.45, 10.7))  
+#    ax.axhline(u,ls='dotted',color=color,lw=1)  
+#    ax.axhline(l,ls='dotted',color=color,lw=1)
+    ax.scatter(idxquantile(data,q=0.05),data.quantile(0.05),s=30,c='None',lw=1,edgecolor=color,marker='o')
+    ax.scatter(idxquantile(data,q=0.95),data.quantile(0.95),s=30,c='None',lw=1,edgecolor=color,marker='o')
+
+    for year in np.unique(data.index.year):
+        subset=data[data.index.year==year]
+        ax.plot([idxquantile(subset),idxquantile(subset)],[l,subset.quantile(0.5)],\
+                 ls='-',color=color,lw=2,alpha=alpha2)
+#        ax.plot([idxquantile(subset),idxquantile(subset)],[subset.quantile(0.5),u],\
+#                 ls='-',color=color,lw=2,alpha=0.3)
+#        ax.plot(idxquantile(subset),subset.quantile(0.5),'s',color=color,markersize=4)
+    ax.set_xlim([data.index.min(),data.index.max()])
+    ax2 = ax.twinx()
+    ax2.set_ylabel('$\quad $'+'RWC',color=color)
+    ax2.tick_params(colors=color)
+    ax2.set_yticks([0.33,(0.33+0.71)/2,0.71])
+    ax2.set_yticklabels([0.0,0.5,1.0])
+    ax.set_yticks(np.arange(1.2,1.6,0.1))
+    ax2.grid(axis='y',lw=0.5,alpha=0.2,color=color)
 def main():
     plot_RWC_definition()
-    plot_RWC_timeseries()
+#    plot_RWC_timeseries()
+#    plot_regression(dataset='predicted')
 
 if __name__ == '__main__':
     main()

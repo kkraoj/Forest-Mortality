@@ -67,31 +67,38 @@ def cost_fun(Xb,Yb,theta):
 
 #
 #
-#print('==== Training model on data set A ====')
-#Xa, Ya = load_data('data_a.txt')
-#theta_frame=logistic_regression(Xa, Ya)
+print('==== Training model on data set A ====')
+Xa, Ya = load_data('data_a.txt')
+theta_frame=logistic_regression(Xa, Ya)
 #cost=[cost_fun(Xa,Ya,theta) for theta in theta_frame]
 
-print('\n==== Training model on data set B ====')
+#print('\n==== Training model on data set B ====')
 Xb, Yb = load_data('data_b.txt')
-theta_frame=logistic_regression(Xb, Yb)
+#theta_frame=logistic_regression(Xb, Yb)
 #cost=[cost_fun(Xb,Yb,theta) for theta in theta_frame]
 
 
 
 plt.style.use('seaborn-darkgrid')
 
-theta1,theta2 = np.meshgrid(theta_frame[:,0],theta_frame[:,1])
-Z=np.copy(theta1)
-for i in range(theta1.shape[0]):
-    for j in range(theta1.shape[1]):
-        theta=[theta1[i,j],theta2[i,j]]
-        Z[i,j]=cost_fun(Xb[:,:2], Yb,theta)        
-
-#fig, ax = plt.subplots(1,1,figsize=(4,4))
-
-fig=plt.figure()
-ax = fig.gca(projection='3d')
-ax.plot_surface(theta1,theta2,Z,cmap=cm.coolwarm)
+#theta1,theta2 = np.meshgrid(theta_frame[:,0],theta_frame[:,1])
+#Z=np.copy(theta1)
+#for i in range(theta1.shape[0]):
+#    for j in range(theta1.shape[1]):
+#        theta=[theta1[i,j],theta2[i,j]]
+#        Z[i,j]=cost_fun(Xb[:,:2], Yb,theta) 
+x=Xa
+y=Ya
+for [x,y,title] in zip([Xa,Xb],[Ya,Yb],['A','B']):
+    marker=['o' if l>0 else 'x' for l in y]
+    fig, ax = plt.subplots(1,1,figsize=(3,3))
+    for _x1,_x2,_m in zip(x[:,1],x[:,2],marker):
+        ax.scatter(_x1,_x2, marker=_m,c='k',lw=0.5)
+        ax.set_title('Dataset %s'%title)
+        ax.set_xlabel('X1')
+        ax.set_ylabel('X2')
+#fig=plt.figure()
+#ax = fig.gca(projection='3d')
+#ax.plot_surface(theta1,theta2,Z,cmap=cm.coolwarm)
 #plt.xscale('symlog')
 #plt.yscale('symlog')

@@ -21,7 +21,7 @@ set.seed(10)
 train.fraction=0.7
 FAM.threshold=0.15
 FAM.cutoff=0.00
-write.files=TRUE
+write.files=0
 ```
 
 ```{r}

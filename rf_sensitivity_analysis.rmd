@@ -79,15 +79,15 @@ write.csv(importance, file = "D:/Krishna/Project/data/rf_sensitivity_importance.
 ```
 
 ```{r}
-rank = colnames(t(imp.frame))[max.col(t(imp.frame),ties.method="first")]
-rank=table(rank)
-rank=data.frame(rank,row.names=1)
-rank$Freq=rank$Freq/sum(rank$Freq)
-g=ggplot(rank,aes(x=reorder(row.names(rank),rank$Freq),y=Freq))
-g+geom_col(fill='dodgerblue3')+
-  # geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
-  coord_flip()+
-  labs(x='Features',y='Fraction of experiments feature is most important',title='Top most ranked features')+
-  theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
-# write.csv(rank, file = "D:/Krishna/Project/data/rf_sensitivity_rank.csv")
+# rank = colnames(t(imp.frame))[max.col(t(imp.frame),ties.method="first")]
+# rank=table(rank)
+# rank=data.frame(rank,row.names=1)
+# rank$Freq=rank$Freq/sum(rank$Freq)
+# g=ggplot(rank,aes(x=reorder(row.names(rank),rank$Freq),y=Freq))
+# g+geom_col(fill='dodgerblue3')+
+#   # geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd))+
+#   coord_flip()+
+#   labs(x='Features',y='Fraction of experiments feature is most important',title='Top most ranked features')+
+#   theme(plot.title = element_text(hjust = 0.5),text = element_text(size=15))
+# # write.csv(rank, file = "D:/Krishna/Project/data/rf_sensitivity_rank.csv")
 ```
